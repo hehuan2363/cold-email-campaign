@@ -1,0 +1,25 @@
+# Lead data (may contain PII)
+leads/*.csv
+
+# Credentials & secrets
+*.pem
+*.key
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+scripts/.venv/
+scripts/.python-version
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings
+.claude/settings.local.json

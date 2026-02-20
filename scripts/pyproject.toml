@@ -1,0 +1,10 @@
+[project]
+name = "cold-email-campaign"
+version = "0.1.0"
+description = "Cold email campaign automation CLI — lead verification, icebreakers, and clean CSV generation"
+requires-python = ">=3.10"
+dependencies = [
+    "dnspython>=2.8.0",
+    "google-genai>=1.63.0",
+    "pysocks>=1.7.1",
+]

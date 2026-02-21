@@ -1,149 +1,114 @@
-# Cold Email Campaign CLI
+# Cold Email Campaign — AI Agent Skill
 
-End-to-end cold email campaign automation — from niche selection and offer writing to verified lead lists ready for [Instantly](https://instantly.ai).
+An AI agent skill that runs your entire cold email campaign end-to-end. Just type one command, answer a few questions, and your AI agent handles everything — from writing offers to producing a verified, clean lead list ready for [Instantly](https://instantly.ai).
 
-Works with **Claude Code**, **Cursor**, and other AI coding agents via the included skill definition. Just type `/cold-email-campaign start` and the AI walks you through everything.
+Built for **Claude Code**, but works with any AI coding agent that supports skill/prompt files.
 
-## The Full Pipeline
-
-| Step | What | How |
-|------|------|-----|
-| 1 | **Pick niche & generate offers** | AI generates 2 offers (free build + free audit) with Apollo search filters |
-| 2 | **Source leads** | Guidance on Apollo filters, niche databases, and CSV export |
-| 3 | **Generate icebreakers** | AI writes personalized 1-line openers for each lead |
-| 4 | **Shorten company names** | Cleans up long names for `{{companyName}}` template variable |
-| 5 | **Verify emails** | SMTP check (free) + MillionVerifier API for blocked IPs |
-| 6 | **Create clean CSV** | Removes bad emails, outputs Instantly-ready file |
-| 7 | **Write email sequences** | AI generates 2-email sequences with subject line variations |
-| 8 | **Launch on Instantly** | Checklist for domain setup, warmup, and monitoring |
-
-## Quick Start
-
-### Prerequisites
-- Python 3.10+
-- [uv](https://docs.astral.sh/uv/) (Python package manager)
-- [Gemini API key](https://aistudio.google.com/apikey) (free)
-- [MillionVerifier API key](https://millionverifier.com) (optional, ~$3/500 emails)
-
-### Setup
-
-```bash
-git clone https://github.com/hehuan2363/cold-email-campaign.git
-cd cold-email-campaign
-
-# Set your API keys
-export GEMINI_API_KEY="your-gemini-key"
-export MV_API_KEY="your-mv-key"              # optional
-export EHLO_DOMAIN="yourdomain.com"          # your sending domain
-export SENDER_EMAIL="verify@yourdomain.com"
-
-# Install dependencies
-cd scripts && uv sync
-```
-
-### Using with an AI Coding Agent (Recommended)
-
-If you're using **Claude Code**, **Cursor**, or any AI coding agent:
+## How It Works
 
 ```
 /cold-email-campaign start
 ```
 
-The AI will guide you step-by-step through the entire pipeline — from picking your niche to launching on Instantly. It asks the right questions, generates offers and sequences, and runs all the scripts for you.
+That's it. Your AI agent will:
 
-### Using the CLI Directly
+1. **Ask about your niche** — What industry? What's your experience/credibility?
+2. **Generate 2 offers** — Free Build + Free Audit, customized to your niche
+3. **Tell you exactly how to source leads** — Apollo search filters, niche databases, what columns to export
+4. **Process your leads** — Once you drop a CSV in `leads/`, the agent runs the full pipeline:
+   - Generate personalized icebreakers for every lead
+   - Shorten company names for email templates
+   - Verify every email (SMTP + MillionVerifier)
+   - Remove bad emails, produce clean CSV
+5. **Write your email sequences** — 2-email sequences with subject line A/B test variations
+6. **Give you the Instantly launch checklist** — Domain setup, warmup, monitoring targets
+
+You just answer questions and review outputs. The agent runs all the scripts.
+
+## Setup (5 minutes)
 
 ```bash
-cd scripts
+# 1. Clone the repo
+git clone https://github.com/hehuan2363/cold-email-campaign.git
+cd cold-email-campaign
 
-# Step 1: Generate offers for your niche
-uv run python campaign.py offers --niche "property management" --bg "I manage my own rental portfolio"
+# 2. Set your API keys
+export GEMINI_API_KEY="your-gemini-key"        # Free at https://aistudio.google.com/apikey
+export MV_API_KEY="your-mv-key"                # Optional, ~$3/500 emails at https://millionverifier.com
+export EHLO_DOMAIN="yourdomain.com"            # Your sending domain
+export SENDER_EMAIL="verify@yourdomain.com"
 
-# Step 7: Generate email sequences
-uv run python campaign.py sequences \
-  --niche "property management" \
-  --offer "I'll build you a custom invoice automation bot for free" \
-  --sender "Alex" \
-  --bg "I manage my own rental portfolio and automated my bookkeeping"
-
-# Steps 3-6: Process leads (after sourcing from Apollo)
-uv run python campaign.py run --file ../leads/my-leads.csv
-
-# Or run individual steps
-uv run python campaign.py icebreakers --file ../leads/my-leads.csv
-uv run python campaign.py shorten --file ../leads/my-leads-with-icebreakers.csv
-uv run python campaign.py verify --file ../leads/my-leads-with-icebreakers.csv
-uv run python campaign.py verify-mv --file ../leads/my-leads-with-icebreakers.csv
-uv run python campaign.py clean --file ../leads/my-leads-with-icebreakers.csv
-uv run python campaign.py stats --file ../leads/my-leads-with-icebreakers.csv
-
-# Check setup
-uv run python campaign.py check
+# 3. Install dependencies
+cd scripts && uv sync
 ```
 
-### Input Format
+**Requirements:** Python 3.10+, [uv](https://docs.astral.sh/uv/)
 
-Export leads from [Apollo.io](https://apollo.io) as CSV. Key columns:
-- `email`, `firstName`, `lastName`, `title` (required)
-- `organizationName`, `organizationDescription`, `organizationSpecialities` (for icebreakers)
-- `city`, `state`, `organizationSize`, `organizationIndustry`
+## Using It
 
-### Output
+### With Claude Code (recommended)
+```
+/cold-email-campaign start      # New campaign from scratch
+/cold-email-campaign offers     # Just generate offers
+/cold-email-campaign sequences  # Just write email sequences
+/cold-email-campaign verify     # Just verify a lead file
+```
 
-The pipeline adds these columns and produces a clean CSV:
-- `icebreaker` — Personalized opening line
-- `shortenedCompanyName` — Clean company name for `{{companyName}}`
-- `email_status` — `valid`, `catch_all`, `rejected`, `no_mx`, `ip_blocked`, etc.
+### With other AI coding agents
+Copy `.claude/skills/cold-email-campaign/SKILL.md` into your agent's prompt or context. The skill file contains the full pipeline instructions — any AI agent that can run shell commands will be able to follow it.
 
-Final output: `*-CLEAN.csv` with only sendable leads (`valid` + `catch_all`).
+### Manual CLI (if you prefer)
+```bash
+cd scripts
+uv run python campaign.py offers --niche "property management" --bg "I manage my own rental portfolio"
+uv run python campaign.py sequences --niche "..." --offer "..." --sender "Alex" --bg "..."
+uv run python campaign.py run --file ../leads/my-leads.csv
+uv run python campaign.py stats --file ../leads/my-leads.csv
+```
 
-## Project Structure
+## What's Inside
 
 ```
 cold-email-campaign/
+├── .claude/skills/          # The AI agent skill definition
 ├── scripts/
-│   ├── campaign.py          # Main CLI entry point
-│   ├── config.py            # Configuration (env vars)
-│   ├── pyproject.toml       # Dependencies
+│   ├── campaign.py          # CLI entry point (the agent runs this for you)
 │   └── lib/
 │       ├── offers.py        # AI offer generation
 │       ├── sequences.py     # AI email sequence writing
-│       ├── icebreakers.py   # AI icebreaker generation
+│       ├── icebreakers.py   # AI personalized openers
 │       ├── shorten.py       # Company name shortening
-│       ├── verify_smtp.py   # Local SMTP verification
-│       ├── verify_mv.py     # MillionVerifier API
+│       ├── verify_smtp.py   # Free local email verification
+│       ├── verify_mv.py     # MillionVerifier API verification
 │       └── clean.py         # CSV cleaning
-├── docs/
-│   ├── Cold Email Campaign Playbook.md   # Full process documentation
-│   ├── 6 Cold Email Sequences.md         # Example email templates
-│   ├── 6 Offers.md                       # Example offers
-│   ├── How to write offer.md             # Offer writing framework
-│   └── Icebreaker Generation Guide.md    # Icebreaker guide
-├── leads/                   # Your CSV files go here (gitignored)
-├── .claude/skills/          # Claude Code skill definition
-├── CLAUDE.md                # Claude Code project context
+├── docs/                    # Playbook, example offers, example sequences
+├── leads/                   # Drop your Apollo CSV exports here
+├── CLAUDE.md                # Project context for AI agents
 └── README.md
 ```
 
-## Docs Included
+## The Pipeline
 
-The `docs/` directory contains guides and example templates:
+| Step | What happens | Who does it |
+|------|-------------|-------------|
+| 1. Pick niche & write offers | AI asks questions, generates 2 offers per niche | Agent |
+| 2. Source leads | Agent gives you Apollo filters & niche databases | You export CSV |
+| 3. Generate icebreakers | Personalized opening lines via Gemini | Agent |
+| 4. Shorten company names | Clean names for `{{companyName}}` variable | Agent |
+| 5. Verify emails | SMTP check + MillionVerifier for blocked IPs | Agent |
+| 6. Create clean CSV | Remove bad emails → Instantly-ready file | Agent |
+| 7. Write email sequences | 2-email sequences with A/B subject lines | Agent |
+| 8. Launch on Instantly | Domain setup, warmup, monitoring checklist | Agent guides you |
 
-- **Cold Email Campaign Playbook** — Complete 8-step process with checklists
-- **6 Offers** — Example offers across 3 niches (property management, engineering, accounting)
-- **6 Cold Email Sequences** — Example email templates with subject lines
-- **How to Write Offer** — Framework for crafting irresistible free offers
-- **Icebreaker Generation Guide** — Rules and examples for personalized openers
+**Cost per 1,000 leads:** ~$8.50 (Apify scraping + MillionVerifier + Gemini API)
 
-These are examples — customize everything for your own niche and business.
+## Good to Know
 
-## Important Notes
-
-- **Residential IPs are often on Spamhaus.** Outlook/Microsoft domains will return `ip_blocked`. Budget for MillionVerifier credits.
-- **Cloud VMs (GCP, AWS, Oracle) block outbound port 25.** SMTP verification won't work from cloud machines.
-- **All consumer VPNs block port 25.** Don't waste time with WARP, ProtonVPN, etc.
-- **Target <3% bounce rate.** If bounce rate is higher, stop the campaign and re-verify.
-- **All steps are resumable.** Progress is saved every 50 leads.
+- **Residential IPs are often on Spamhaus.** Outlook domains return `ip_blocked` — that's what MillionVerifier is for.
+- **Cloud VMs and VPNs block port 25.** Don't try SMTP verification from GCP, AWS, Oracle, WARP, or ProtonVPN.
+- **Target <3% bounce rate.** If higher, stop and re-verify.
+- **All steps are resumable.** Progress saves every 50 leads.
+- **Docs included.** Check `docs/` for the full playbook, example offers, and example email templates.
 
 ## License
 

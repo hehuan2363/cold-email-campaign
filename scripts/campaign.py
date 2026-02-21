@@ -6,6 +6,8 @@ Single entry point for the entire cold email pipeline.
 
 Usage:
   campaign.py check                         Check prerequisites
+  campaign.py offers --niche ... --bg ...   Generate offers for a niche
+  campaign.py sequences --niche ... ...     Write email sequences
   campaign.py icebreakers --file FILE       Generate icebreakers
   campaign.py shorten --file FILE           Shorten company names
   campaign.py verify --file FILE            SMTP email verification
@@ -15,7 +17,7 @@ Usage:
   campaign.py stats --file FILE             Show verification stats
 
 Environment variables:
-  GEMINI_API_KEY    Gemini API key (for icebreakers + company name shortening)
+  GEMINI_API_KEY    Gemini API key (for offers, sequences, icebreakers, company names)
   MV_API_KEY        MillionVerifier API key (for ip_blocked email verification)
 """
 import argparse
@@ -69,6 +71,20 @@ def cmd_check(args):
         print(f"  Leads dir:      NOT FOUND at {leads_dir}")
 
     print(f"\n{'All good!' if ok else 'Fix the issues above before proceeding.'}")
+
+
+def cmd_offers(args):
+    """Generate offers for a niche."""
+    from lib.offers import process
+    output = os.path.join(os.path.dirname(__file__), "..", "docs", f"offers-{args.niche.lower().replace(' ', '-')}.md") if not args.output else args.output
+    process(args.niche, args.background, output_file=output)
+
+
+def cmd_sequences(args):
+    """Generate email sequences for an offer."""
+    from lib.sequences import process
+    output = os.path.join(os.path.dirname(__file__), "..", "docs", f"sequence-{args.niche.lower().replace(' ', '-')}.md") if not args.output else args.output
+    process(args.niche, args.offer, args.sender, args.background, output_file=output)
 
 
 def cmd_icebreakers(args):
@@ -192,6 +208,20 @@ def main():
     # check
     subparsers.add_parser("check", help="Check prerequisites")
 
+    # offers
+    p = subparsers.add_parser("offers", help="Generate offers for a niche")
+    p.add_argument("--niche", required=True, help="Target niche (e.g., 'property management')")
+    p.add_argument("--background", "--bg", required=True, help="Your relevant experience/credibility")
+    p.add_argument("--output", "-o", default="", help="Output file path (default: docs/offers-{niche}.md)")
+
+    # sequences
+    p = subparsers.add_parser("sequences", help="Write email sequences for an offer")
+    p.add_argument("--niche", required=True, help="Target niche")
+    p.add_argument("--offer", required=True, help="The offer text to build the sequence around")
+    p.add_argument("--sender", required=True, help="Sender's first name")
+    p.add_argument("--background", "--bg", required=True, help="Sender's credibility/experience")
+    p.add_argument("--output", "-o", default="", help="Output file path (default: docs/sequence-{niche}.md)")
+
     # icebreakers
     p = subparsers.add_parser("icebreakers", help="Generate icebreakers")
     p.add_argument("--file", required=True, help="Path to CSV file")
@@ -229,6 +259,8 @@ def main():
 
     commands = {
         "check": cmd_check,
+        "offers": cmd_offers,
+        "sequences": cmd_sequences,
         "icebreakers": cmd_icebreakers,
         "shorten": cmd_shorten,
         "verify": cmd_verify,

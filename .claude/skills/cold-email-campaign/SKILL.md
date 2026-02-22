@@ -10,37 +10,84 @@ You are a cold email campaign expert guiding the user through the entire process
 
 ## Arguments
 - `$ARGUMENTS` — optional step name or "start" for a new campaign. If no argument, ask what the user wants to do.
-  - `start` — Begin a new campaign from scratch (Step 1)
+  - `start` — Begin a new campaign from scratch (Step 0: Discovery)
   - `offers` — Generate offers for a niche
-  - `sequences` — Write email sequences
   - `leads` — Get guidance on sourcing leads
-  - `icebreakers` — Generate icebreakers for a CSV
-  - `verify` — Verify emails
-  - `clean` — Create clean CSV
-  - `run` — Run the technical pipeline (icebreakers → verify → clean)
+  - `process` — Resume after sourcing leads — run icebreakers, verify, clean, sequences
+  - `sequences` — Write email sequences
   - `launch` — Get Instantly launch checklist
-
-## Full Pipeline (8 Steps)
-
-Guide the user through these steps IN ORDER. At each step, be proactive — don't just run commands, explain what's happening and why.
 
 ---
 
-### Step 1: Pick a Niche & Write Offers
+## Step 0: Discovery — Understand the User
+
+**ALWAYS start here for new campaigns.** You cannot write good offers or sequences without understanding the user first.
+
+Save all answers to `docs/campaign-profile.md` so any future session can pick up where the user left off.
+
+**Ask these questions one at a time** (don't dump all at once):
+
+1. **"What's your business? What do you sell or do?"**
+   - Need: their core service/product
+
+2. **"Who have you helped before? What results did you get them?"**
+   - Need: proof, case studies, numbers — even if informal ("I automated my own bookkeeping and saved 10 hours/week")
+
+3. **"What niche are you targeting with this campaign?"**
+   - Need: specific industry (not "small businesses" — too broad)
+
+4. **"Why this niche? Do you have personal experience or credibility here?"**
+   - Need: the "why me" — this is what makes the email believable vs generic
+   - Good: "I managed rental properties for 5 years" / "I was a CPA for 10 years" / "I built document search at an engineering firm"
+   - If they have no connection, help them find an angle or suggest a niche where they DO have credibility
+
+5. **"What could you realistically build or do for a prospect for FREE in under a week?"**
+   - Need: the free deliverable (bot, demo, audit, report, template)
+   - It must be: genuinely useful, cheap to produce (reuse templates), and easy to say "yes" to
+
+6. **"What's your name and sending domain?"**
+   - Need: first name (for email signature) and domain (for SMTP config)
+
+**After collecting answers, write `docs/campaign-profile.md`:**
+```markdown
+# Campaign Profile
+
+## Business
+[what they do]
+
+## Proof / Results
+[past results, case studies, experience]
+
+## Target Niche
+[specific industry]
+
+## Credibility / Connection
+[why this niche, personal angle]
+
+## Free Deliverable
+[what they can build/do for free]
+
+## Sender
+- Name: [first name]
+- Domain: [domain]
+```
+
+Then proceed to Step 1.
+
+---
+
+## Step 1: Generate Offers
 
 **This is the most important step.** A bad offer = low reply rate no matter how good everything else is.
 
-Ask the user:
-1. "What niche are you targeting?" (industry, type of business)
-2. "What's your personal connection to this niche?" (experience, proof, credibility)
-3. "What can you build or do for them for FREE?" (the offer)
+Read `docs/campaign-profile.md` to recall the user's info. Then generate offers.
 
-**Offer formula** (every offer must have ALL THREE):
+**Every offer MUST have ALL THREE:**
 - **Free** — zero financial risk to the prospect
 - **Low-friction response** — one-word reply ("yes", "interested")
 - **Cheap for you to deliver** — reuse existing tools/templates
 
-**Generate 2 offers per niche:**
+**Generate 2 offers:**
 - **Offer A: Free Build** — build something tangible for free (bot, demo, tool, report)
 - **Offer B: Free Audit** — review their workflows, give actionable plan
 
@@ -51,126 +98,112 @@ Ask the user:
 - "No cost, no strings — I'll do all the work"
 - "Worst case, you walk away with a clear action plan"
 
-Use Gemini to help generate offers:
+Run:
 ```bash
-cd scripts && uv run python campaign.py offers --niche "description of niche" --background "your relevant experience"
+cd scripts && uv run python campaign.py offers --niche "[niche from profile]" --bg "[credibility from profile]"
 ```
 
-Save the offers to `docs/offers.md`. The user should review and customize before proceeding.
+Save output to `docs/offers.md`. Present both offers to the user, explain why each works, and ask them to pick their favorite or tweak.
 
-Reference: `docs/6 Offers.md` for example offers, `docs/How to write offer.md` for the offer writing framework.
+Reference: `docs/6 Offers.md` for examples, `docs/How to write offer.md` for the framework.
 
 ---
 
-### Step 2: Source Leads
+## Step 2: Source Leads
 
-**First, find niche-specific databases** (higher quality than generic search):
-- Ask AI: "Where can I find a database of [industry] firms?"
-- Examples: AIA (architects), AICPA (accountants), NARPM (property managers), industry association directories
-- These give 100% accurate company lists; then use Apollo to enrich with emails
+**First, suggest niche-specific databases** (higher quality than generic scraping):
+- Search the web: "Where can I find a database/directory of [niche] firms?"
+- Examples: AIA (architects), AICPA (accountants), NARPM (property managers), ABC (contractors)
+- These give 100% accurate company lists; Apollo enriches with emails
 
-**Then, help the user build Apollo search filters:**
+**Then, give the user EXACT Apollo search filters for their niche:**
 
-Tell the user to search on [Apollo.io](https://apollo.io) (or use Apify's Apollo scraper for bulk export). Give them specific filters:
+Based on their profile, generate a ready-to-paste filter set:
 
-| Filter | What to enter |
-|--------|--------------|
-| **Job titles** | Decision-makers: Owner, Managing Partner, Director of Operations, VP, CEO, CTO |
-| **Company size** | Sweet spot: 10-200 employees (big enough to pay, small enough to reach decision-maker) |
-| **Industry** | Be specific to the niche |
-| **Location** | US & Canada (English-speaking, business-friendly) |
+| Filter | Value |
+|--------|-------|
+| **Job titles** | [3-5 decision-maker titles specific to their niche] |
+| **Company size** | [sweet spot for their niche, e.g., 10-200 employees] |
+| **Industry** | [specific Apollo industry tags] |
+| **Location** | US & Canada |
+| **Keywords** | [niche-specific keywords to narrow results] |
 
-**Key columns to keep from Apollo export:**
-- `firstName`, `lastName`, `email`, `title` (required)
-- `organizationName`, `organizationDescription`, `organizationSpecialities` (for icebreakers)
-- `city`, `state`, `organizationSize`, `organizationFoundedYear`, `organizationIndustry`
+**Tell the user which columns to export from Apollo:**
+- Required: `firstName`, `lastName`, `email`, `title`
+- For icebreakers: `organizationName`, `organizationDescription`, `organizationSpecialities`
+- Optional: `city`, `state`, `organizationSize`, `organizationFoundedYear`, `organizationIndustry`
 
-**Naming convention:** `YYYY-MM-DD-apollo-{Niche}-{filters}.csv`
+**Then tell the user:**
 
-Tell the user to save the CSV to the `leads/` directory.
+> Save the CSV to the `leads/` folder. When you have it, come back and type:
+>
+> `/cold-email-campaign process`
+>
+> I'll take it from there — icebreakers, verification, clean CSV, and email sequences.
 
----
-
-### Step 3: Generate Icebreakers
-
-Once the user has a CSV in `leads/`, run:
-```bash
-cd scripts && uv run python campaign.py icebreakers --file "../leads/your-file.csv"
-```
-
-**What this does:**
-- Uses Gemini API to write a personalized 1-line opening for each lead
-- References something specific about their company, role, or location
-- Casual/spartan tone ("typed on phone")
-- Saves progress every 50 leads (resumable if interrupted)
-- Output: `*-with-icebreakers.csv`
-
-**Icebreaker rules the AI follows:**
-- One sentence, 10-20 words
-- Always starts with "Hey {firstName}."
-- Shortens company names and locations
-- Returns "SKIP" for non-person entries
+**Also save the filters to `docs/campaign-profile.md`** so the user (or a future session) can reference them.
 
 ---
 
-### Step 4: Shorten Company Names
+## Step 3: Process Leads (Resume Point)
 
+**This is where the user comes back after scraping.** When they type `/cold-email-campaign process`:
+
+1. **Check for CSV files** — Look in `leads/` for new CSV files:
 ```bash
-cd scripts && uv run python campaign.py shorten --file "../leads/your-file-with-icebreakers.csv"
+ls -la leads/*.csv
 ```
 
-Adds `shortenedCompanyName` column — used as `{{companyName}}` in email templates.
-Examples: "Johnson Controls International" → "Johnson Controls", "Deloitte LLP" → "Deloitte"
+2. **Read `docs/campaign-profile.md`** to recall the user's niche, credibility, offers, and sender name. If the file doesn't exist, ask the discovery questions from Step 0.
+
+3. **Confirm with the user** — "I see `leads/[filename].csv`. Should I process this file? I'll generate icebreakers, shorten company names, verify emails, and create a clean CSV."
+
+4. **Run the technical pipeline:**
+
+```bash
+cd scripts && uv run python campaign.py icebreakers --file "../leads/[file].csv"
+```
+Wait for completion, then:
+```bash
+cd scripts && uv run python campaign.py shorten --file "../leads/[file]-with-icebreakers.csv"
+```
+Then:
+```bash
+cd scripts && uv run python campaign.py verify --file "../leads/[file]-with-icebreakers.csv"
+```
+Then check stats:
+```bash
+cd scripts && uv run python campaign.py stats --file "../leads/[file]-with-icebreakers.csv"
+```
+
+If there are `ip_blocked` leads and MV_API_KEY is set:
+```bash
+cd scripts && uv run python campaign.py verify-mv --file "../leads/[file]-with-icebreakers.csv"
+```
+If MV_API_KEY is not set, tell the user how many leads are ip_blocked and that they need a MillionVerifier API key (~$3/500 emails) to verify these. Ask if they want to proceed without them or set the key.
+
+Finally, create clean CSV:
+```bash
+cd scripts && uv run python campaign.py clean --file "../leads/[file]-with-icebreakers.csv"
+```
+
+5. **Show results** — Tell the user: total leads, how many are sendable, how many were removed, and the clean file name.
+
+6. **Proceed to Step 4** — Offer to generate email sequences.
 
 ---
 
-### Step 5: Verify Emails
+## Step 4: Write Email Sequences
+
+**Read `docs/campaign-profile.md`** for the user's info (name, niche, credibility, offers).
+
+Generate 2 sequences (one per offer) for A/B testing:
 
 ```bash
-cd scripts && uv run python campaign.py verify --file "../leads/your-file-with-icebreakers.csv"
+cd scripts && uv run python campaign.py sequences --niche "[niche]" --offer "[offer A text]" --sender "[name]" --bg "[credibility]"
 ```
 
-**Layer 1: Local SMTP check** (free, catches ~40% of bad emails)
-- Checks: syntax → MX lookup → SMTP RCPT TO probe
-- Adds `email_status` column
-
-**Layer 2: MillionVerifier API** (for `ip_blocked` leads):
-```bash
-cd scripts && uv run python campaign.py verify-mv --file "../leads/your-file-with-icebreakers.csv"
-```
-- Cost: ~$3/500 emails
-- Required because residential IPs are often on Spamhaus blocklists
-
-**Email status meanings:**
-| Status | Action |
-|--------|--------|
-| `valid` | Safe to send |
-| `catch_all` | Risky but sendable (~60% deliverable) |
-| `rejected` | REMOVE — mailbox doesn't exist |
-| `no_mx` | REMOVE — domain has no mail server |
-| `ip_blocked` | Needs MillionVerifier |
-| `invalid_syntax` | REMOVE |
-
----
-
-### Step 6: Create Clean CSV
-
-```bash
-cd scripts && uv run python campaign.py clean --file "../leads/your-file-with-icebreakers.csv"
-```
-
-Removes all non-sendable leads. Keeps only `valid` and `catch_all`. Creates `*-CLEAN.csv`.
-
----
-
-### Step 7: Write Email Sequences
-
-Help the user write 2 email sequences (one per offer, for A/B testing).
-
-Use Gemini to generate sequences:
-```bash
-cd scripts && uv run python campaign.py sequences --niche "niche" --offer "the offer text" --sender "sender name" --background "credibility/experience"
-```
+Then run again for Offer B.
 
 **Email formula:**
 ```
@@ -191,16 +224,19 @@ cd scripts && uv run python campaign.py sequences --niche "niche" --offer "the o
 - Much lower friction than booking a call
 
 **Tone rules:**
-- Sign off with "Sent from my iPhone" (looks personal)
+- Sign off with just the sender's first name
+- Add "Sent from my iPhone" at the bottom
 - No HTML, no images, no links — plain text only
 - Short paragraphs (2-3 lines max)
 - Casual, like texting a colleague
+
+Present both sequences to the user. Let them tweak tone, adjust the offer language, or rewrite parts.
 
 Reference: `docs/6 Cold Email Sequences.md` for example sequences.
 
 ---
 
-### Step 8: Launch on Instantly
+## Step 5: Launch on Instantly
 
 Give the user this checklist:
 
@@ -225,28 +261,6 @@ Give the user this checklist:
 - Winner with >2% reply rate → add a 3rd follow-up email
 
 ---
-
-## Quick Commands Reference
-
-```bash
-cd scripts
-
-# Strategy (AI-assisted)
-uv run python campaign.py offers --niche "..." --background "..."
-uv run python campaign.py sequences --niche "..." --offer "..." --sender "..." --background "..."
-
-# Technical pipeline
-uv run python campaign.py check
-uv run python campaign.py icebreakers --file "../leads/file.csv"
-uv run python campaign.py shorten --file "../leads/file.csv"
-uv run python campaign.py verify --file "../leads/file.csv"
-uv run python campaign.py verify-mv --file "../leads/file.csv"
-uv run python campaign.py clean --file "../leads/file.csv"
-uv run python campaign.py stats --file "../leads/file.csv"
-
-# Full technical pipeline (steps 3-6 at once)
-uv run python campaign.py run --file "../leads/file.csv"
-```
 
 ## Important Notes
 - **Residential IPs are often on Spamhaus.** Outlook/Microsoft domains will return `ip_blocked`. Always budget for MillionVerifier.

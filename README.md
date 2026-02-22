@@ -6,24 +6,42 @@ Built for **Claude Code**, but works with any AI coding agent that supports skil
 
 ## How It Works
 
+### 1. Start a new campaign
 ```
 /cold-email-campaign start
 ```
 
-That's it. Your AI agent will:
+The agent asks you about your business, niche, experience, and what you can offer for free. It saves your profile so every future session remembers who you are.
 
-1. **Ask about your niche** — What industry? What's your experience/credibility?
-2. **Generate 2 offers** — Free Build + Free Audit, customized to your niche
-3. **Tell you exactly how to source leads** — Apollo search filters, niche databases, what columns to export
-4. **Process your leads** — Once you drop a CSV in `leads/`, the agent runs the full pipeline:
-   - Generate personalized icebreakers for every lead
-   - Shorten company names for email templates
-   - Verify every email (SMTP + MillionVerifier)
-   - Remove bad emails, produce clean CSV
-5. **Write your email sequences** — 2-email sequences with subject line A/B test variations
-6. **Give you the Instantly launch checklist** — Domain setup, warmup, monitoring targets
+### 2. Agent generates your offers and lead filters
 
-You just answer questions and review outputs. The agent runs all the scripts.
+Based on your answers, the agent:
+- Writes 2 offers (Free Build + Free Audit) tailored to your niche and credibility
+- Gives you niche-specific databases to check (industry associations, directories)
+- Gives you exact Apollo search filters (job titles, company size, industry, keywords)
+- Tells you which columns to export
+
+### 3. You go source leads
+
+You leave to scrape leads from Apollo (or Apify). The agent tells you:
+
+> Save the CSV to the `leads/` folder. When you have it, come back and type:
+> `/cold-email-campaign process`
+
+### 4. Resume — agent processes everything
+```
+/cold-email-campaign process
+```
+
+The agent picks up where you left off. It reads your profile, finds your CSV, and runs the full pipeline:
+- Generates personalized icebreakers for every lead
+- Shortens company names for email templates
+- Verifies every email address (SMTP + MillionVerifier)
+- Removes bad emails, produces clean CSV
+- Writes 2 email sequences (one per offer) with A/B subject lines
+- Gives you the Instantly launch checklist
+
+You just watch it work and review the outputs.
 
 ## Setup (5 minutes)
 
@@ -44,14 +62,15 @@ cd scripts && uv sync
 
 **Requirements:** Python 3.10+, [uv](https://docs.astral.sh/uv/)
 
-## Using It
+## Commands
 
 ### With Claude Code (recommended)
 ```
-/cold-email-campaign start      # New campaign from scratch
+/cold-email-campaign start      # New campaign — discovery + offers + lead filters
+/cold-email-campaign process    # Resume after sourcing leads — process CSV + write sequences
 /cold-email-campaign offers     # Just generate offers
 /cold-email-campaign sequences  # Just write email sequences
-/cold-email-campaign verify     # Just verify a lead file
+/cold-email-campaign launch     # Get Instantly launch checklist
 ```
 
 ### With other AI coding agents
@@ -64,6 +83,36 @@ uv run python campaign.py offers --niche "property management" --bg "I manage my
 uv run python campaign.py sequences --niche "..." --offer "..." --sender "Alex" --bg "..."
 uv run python campaign.py run --file ../leads/my-leads.csv
 uv run python campaign.py stats --file ../leads/my-leads.csv
+```
+
+## The Flow
+
+```
+/cold-email-campaign start
+        │
+        ▼
+  Discovery (agent asks about you)
+        │
+        ▼
+  Generate offers (2 per niche)
+        │
+        ▼
+  Apollo filters & lead sourcing guidance
+        │
+        ▼
+  ── You go scrape leads, save CSV to leads/ ──
+        │
+        ▼
+/cold-email-campaign process
+        │
+        ▼
+  Icebreakers → Shorten names → Verify emails → Clean CSV
+        │
+        ▼
+  Write email sequences (2 per offer, A/B test)
+        │
+        ▼
+  Instantly launch checklist
 ```
 
 ## What's Inside
@@ -87,27 +136,13 @@ cold-email-campaign/
 └── README.md
 ```
 
-## The Pipeline
-
-| Step | What happens | Who does it |
-|------|-------------|-------------|
-| 1. Pick niche & write offers | AI asks questions, generates 2 offers per niche | Agent |
-| 2. Source leads | Agent gives you Apollo filters & niche databases | You export CSV |
-| 3. Generate icebreakers | Personalized opening lines via Gemini | Agent |
-| 4. Shorten company names | Clean names for `{{companyName}}` variable | Agent |
-| 5. Verify emails | SMTP check + MillionVerifier for blocked IPs | Agent |
-| 6. Create clean CSV | Remove bad emails → Instantly-ready file | Agent |
-| 7. Write email sequences | 2-email sequences with A/B subject lines | Agent |
-| 8. Launch on Instantly | Domain setup, warmup, monitoring checklist | Agent guides you |
-
-**Cost per 1,000 leads:** ~$8.50 (Apify scraping + MillionVerifier + Gemini API)
-
 ## Good to Know
 
 - **Residential IPs are often on Spamhaus.** Outlook domains return `ip_blocked` — that's what MillionVerifier is for.
 - **Cloud VMs and VPNs block port 25.** Don't try SMTP verification from GCP, AWS, Oracle, WARP, or ProtonVPN.
 - **Target <3% bounce rate.** If higher, stop and re-verify.
 - **All steps are resumable.** Progress saves every 50 leads.
+- **Your profile is saved.** `docs/campaign-profile.md` stores your info so new sessions pick up where you left off.
 - **Docs included.** Check `docs/` for the full playbook, example offers, and example email templates.
 
 ## License
